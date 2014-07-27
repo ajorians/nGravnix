@@ -10,10 +10,14 @@ EXE = nGravnix-sdl.tns
 OBJS = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 vpath %.tns $(DISTDIR)
 
-all:	copyheadersandlibs $(EXE)
+all:	prepare $(EXE)
 
 #Because JGit does not do symbolic links and TeamCity uses JGit
-copyheadersandlibs:
+prepare:
+	mkdir include
+	mkdir include/ArchiveLib
+	mkdir include/GravnixLib
+	mkdir lib
 	cp -v ArchiveLib/include/ArchiveLib.h include/ArchiveLib
 	cp -v ArchiveLib/libArchive.a lib
 	cp -v GravnixLib/include/GravnixLib.h include/GravnixLib
@@ -27,10 +31,8 @@ $(EXE): $(OBJS)
 	$(OBJCOPY) -O binary $(@:.tns=.elf) $@
 
 clean:
-	rm -f include/ArchiveLib/ArchiveLib.h
-	rm -f lib/libArchive.a
-	rm -f include/GravnixLib/GravnixLib.h
-	rm -f lib/libGravnix.a
+	rm -rf include
+	rm -rf lib
 	rm -f *.o *.elf
 	rm -f $(EXE)
 
