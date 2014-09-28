@@ -4,6 +4,8 @@
 #include "include/GravnixLib.h"
 #include "Defines.h"
 
+#define GRAVNIXLIB_RUN_SAFE
+
 struct GravnixItem
 {
    int m_nValue;
@@ -19,10 +21,12 @@ struct GravnixBoard
 
 struct GravnixItem* GetAt(struct GravnixBoard* pBoard, int nX, int nY)
 {
+#ifdef GRAVNIXLIB_RUN_SAFE
    if( nX < 0 || nY < 0 || (nX >= pBoard->m_nWidth) || (nY >= pBoard->m_nHeight) ) {
       printf("Accessing non-existant element %d,%d\n", nX, nY);
       return NULL;
    }
+#endif
 
    struct GravnixItem* pItem = pBoard->m_pItems + (pBoard->m_nWidth * nY + nX);
 
@@ -30,10 +34,12 @@ struct GravnixItem* GetAt(struct GravnixBoard* pBoard, int nX, int nY)
 }
 
 struct GravnixItem* GetBoardItem(struct GravnixBoard* pBoard, int nX, int nY) {
+#ifdef GRAVNIXLIB_RUN_SAFE
    if( nX < 0 || nY < 0 || (nX >= pBoard->m_nWidth) || (nY >= pBoard->m_nHeight) ) {
       printf("Accessing non-existant Board element %d,%d\n", nX, nY);
       return NULL;
    }
+#endif
 
    struct GravnixItem* pItem = pBoard->m_pBoardItems + (pBoard->m_nWidth * nY + nX);
 
@@ -70,7 +76,7 @@ struct Gravnix
 int GravnixLoadBoard(GravnixLib api, char* pstrFile)
 {
    DEBUG_FUNC_NAME;
-   printf("GravnixLoadBoard -- Started\n");
+   DEBUG_MSG("GravnixLoadBoard -- Started\n");
 
    struct Gravnix* pH = (struct Gravnix*)api;
 
@@ -172,9 +178,11 @@ int GravnixLoadBoard(GravnixLib api, char* pstrFile)
                nY = nValue;
             }
             else {
+#ifdef GRAVNIXLIB_RUN_SAFE
                if( nValue < NO_PIECE || nValue > STUCK_GLASS_BLOCK_VALUE ) {
                   printf("Invalid piece for spot %d,%d with value %d\n", nX, nY, nValue);
                }
+#endif
                if( nValue == BOARD_VALUE || nValue == BLACKHOLE_BLOCK_VALUE || nValue == STICKY_BLOCK_VALUE ) {
                   SetGravnixBoardValue(api, nX, nY, nValue);
                } else {
@@ -190,9 +198,11 @@ int GravnixLoadBoard(GravnixLib api, char* pstrFile)
    if( nX >= 0 && nY >= 0 ) {
       buffer[nSpotInBuffer] = '\0';
       int nValue = atoi(buffer);
+#ifdef GRAVNIXLIB_RUN_SAFE
       if( nValue < NO_PIECE || nValue > STUCK_GLASS_BLOCK_VALUE ) {
          printf("Invalid piece for spot %d,%d with value %d\n", nX, nY, nValue);
       }
+#endif
 
       if( nValue == BOARD_VALUE || nValue == BLACKHOLE_BLOCK_VALUE || nValue == STICKY_BLOCK_VALUE ) {
          SetGravnixBoardValue(api, nX, nY, nValue);
@@ -201,6 +211,7 @@ int GravnixLoadBoard(GravnixLib api, char* pstrFile)
       }
    }
 
+#ifdef GRAVNIXLIB_RUN_SAFE
    int x,y;
    for(x=0; x<nWidth; x++) {
       for(y=0; y<nHeight; y++) {
@@ -212,8 +223,9 @@ int GravnixLoadBoard(GravnixLib api, char* pstrFile)
          }
       }
    }
+#endif
 
-   printf("GravnixLoadBoard -- Finished!\n");
+   DEBUG_MSG("GravnixLoadBoard -- Finished!\n");
 
    return GRAVNIXLIB_OK;
 }
@@ -241,12 +253,12 @@ int GravnixLibCreate(GravnixLib* api, const char* pstrFile)
 
    *api = pH;
 
-   printf("GravixLibCreate\n");
+   DEBUG_MSG("GravixLibCreate\n");
 
    return GRAVNIXLIB_OK;
 }
 
-int GravnixLibLevelCreate(GravnixLib* api, int nWidth, int nHeight)
+int GravnixLibLevelCreate(GravnixLib* api, int nWidth, int nHeight, int nMoves)
 {
    DEBUG_FUNC_NAME;
 
@@ -255,11 +267,13 @@ int GravnixLibLevelCreate(GravnixLib* api, int nWidth, int nHeight)
       return GRAVNIXLIB_OUT_OF_MEMORY;
    }
 
+   pH->m_pBoard = NULL;
    pH->m_nDirection = GRAVNIXLIB_DIRECTION_NONE; 
-   pH->m_nNumberOfMoves = 5;
    pH->m_pstrFile = NULL;
+   pH->m_nNumberOfMoves = nMoves;
    pH->m_pUndoActions = NULL;
    pH->m_pRedoActions = NULL;
+   pH->m_nLastError = GRAVNIXLIB_OK;
    pH->m_pBoard = malloc(sizeof(struct GravnixBoard));
    if( pH->m_pBoard == NULL ){//Out of memory
       free(pH);
@@ -267,6 +281,7 @@ int GravnixLibLevelCreate(GravnixLib* api, int nWidth, int nHeight)
       return GRAVNIXLIB_OUT_OF_MEMORY;
    }
    pH->m_pBoard->m_pItems = NULL;
+   pH->m_pBoard->m_pBoardItems = NULL;
 
    pH->m_pBoard->m_nWidth = nWidth;
    pH->m_pBoard->m_nHeight = nHeight;
@@ -280,12 +295,28 @@ int GravnixLibLevelCreate(GravnixLib* api, int nWidth, int nHeight)
       return GRAVNIXLIB_OUT_OF_MEMORY;
    }
 
-   int x,y;
-   for(x=0; x<nWidth; x++)
-      for(y=0; y<nHeight; y++)
-         SetGravnixSpotValue(api, x, y, NO_PIECE);
+   pH->m_pBoard->m_pBoardItems = malloc(nWidth*nHeight*sizeof(struct GravnixItem));
+   if( pH->m_pBoard->m_pBoardItems == NULL ) {//Out of memory
+      free(pH->m_pBoard->m_pItems);
+      free(pH->m_pBoard);
+      pH->m_pBoard = NULL;
+      free(pH);
+      pH = NULL;
+      return GRAVNIXLIB_OUT_OF_MEMORY;
+   }
 
    *api = pH;
+
+   DEBUG_MSG("Initializing to NO_PIECE\n");
+   int x,y;
+   for(x=0; x<nWidth; x++) {
+      for(y=0; y<nHeight; y++) {
+         SetGravnixSpotValue(*api, x, y, NO_PIECE);
+         SetGravnixBoardValue(*api, x, y, NO_PIECE);
+      }
+   }
+
+   DEBUG_MSG("LibLevelCreate -- Finished\n");
 
    return GRAVNIXLIB_OK;
 }
@@ -372,6 +403,9 @@ int GravnixLibFree(GravnixLib* api)
    free(pH->m_pBoard->m_pItems);
    pH->m_pBoard->m_pItems = NULL;
 
+   free(pH->m_pBoard->m_pBoardItems);
+   pH->m_pBoard->m_pBoardItems = NULL;
+
    free(pH->m_pBoard);
    pH->m_pBoard = NULL;
    free(pH);
@@ -418,9 +452,11 @@ int GravnixSave(GravnixLib api, char* pstr)
    int x=0, y=0;
    for(y=0; y<GetGravnixBoardHeight(api); y++) {
       for(x=0; x<GetGravnixBoardWidth(api); x++) {
-         int nValue = GetGravnixSpotValue(api, x, y);
-         if( nValue == 0 )
+         int nSpotValue = GetGravnixSpotValue(api, x, y), nBoardValue = GetGravnixBoardValue(api, x, y);
+         if( nSpotValue == NO_PIECE && nBoardValue == NO_PIECE )
             continue;
+
+         int nValue = nSpotValue > NO_PIECE ? nSpotValue : nBoardValue;
 
          sprintf(buffer, "%d ", x);
          strcat(pstr, buffer);
@@ -470,19 +506,21 @@ int SetGravnixSpotValue(GravnixLib api, int nX, int nY, int nValue)
 
    struct Gravnix* pH = (struct Gravnix*)api;
 
+#ifdef GRAVNIXLIB_RUN_SAFE
    switch(nValue)
    {
       default:
       case BOARD_VALUE:
-      case BLACKHOLE_BLOCK_VALUE:
-      case STICKY_BLOCK_VALUE:
-      case STUCK_GLASS_BLOCK_VALUE:
          printf("Unexpected SetGravnixSpotValue: %d\n", nValue);
          break;
       case NO_PIECE:
       case RED_BLOCK_VALUE...RAINBOW_BLOCK_VALUE:
+      case BLACKHOLE_BLOCK_VALUE:
+      case STICKY_BLOCK_VALUE:
+      case STUCK_GLASS_BLOCK_VALUE:
          break;
    }
+#endif
 
    GetAt(pH->m_pBoard, nX, nY)->m_nValue = nValue;
    return GRAVNIXLIB_OK;
@@ -501,12 +539,15 @@ int SetGravnixBoardValue(GravnixLib api, int nX, int nY, int nValue)
 {
    DEBUG_FUNC_NAME;
 
+#ifdef GRAVNIXLIB_RUN_SAFE
    if( nValue < NO_PIECE || nValue > STUCK_GLASS_BLOCK_VALUE ) {
       printf("Attempting to set board value spot %d,%d to %d\n", nX, nY, nValue);
    }
+#endif
 
    struct Gravnix* pH = (struct Gravnix*)api;
 
+#ifdef GRAVNIXLIB_RUN_SAFE
    switch(nValue)
    {
       default:
@@ -519,6 +560,7 @@ int SetGravnixBoardValue(GravnixLib api, int nX, int nY, int nValue)
       case STUCK_GLASS_BLOCK_VALUE:
          break;
    }
+#endif
 
    GetBoardItem(pH->m_pBoard, nX, nY)->m_nValue = nValue;
    return GRAVNIXLIB_OK;
@@ -527,7 +569,6 @@ int SetGravnixBoardValue(GravnixLib api, int nX, int nY, int nValue)
 int IsGravnixSolved(GravnixLib api)
 {
    DEBUG_FUNC_NAME;
-   //printf("IsGravnixSolved\n");
 
    struct Gravnix* pH = (struct Gravnix*)api;
 
@@ -570,7 +611,6 @@ int GetGravnixMovesMadeSoFar(GravnixLib api)
 int ShouldGravnixPieceDrop(GravnixLib api, int nX, int nY)
 {
    DEBUG_FUNC_NAME;
-   //printf("ShouldGravnixPieceDrop\n");
 
    struct Gravnix* pH = (struct Gravnix*)api;
 
@@ -624,7 +664,6 @@ int ShouldGravnixPieceDrop(GravnixLib api, int nX, int nY)
 int DropGravnixPiece(GravnixLib api, int nX, int nY)
 {
    DEBUG_FUNC_NAME;
-   //printf("DropGravnixPiece\n");
 
    struct Gravnix* pH = (struct Gravnix*)api;
 
@@ -653,7 +692,6 @@ int DropGravnixPiece(GravnixLib api, int nX, int nY)
 int DoGravnixDropping(GravnixLib api)
 {
    DEBUG_FUNC_NAME;
-   //printf("DoGravnixDropping\n");
 
    struct Gravnix* pH = (struct Gravnix*)api;
 
@@ -680,7 +718,6 @@ int IsNormalPieceType(int nType)
 int ShouldGravnixPieceDisappear(GravnixLib api, int nX, int nY)
 {
    DEBUG_FUNC_NAME;
-   //printf("ShouldGravnixPieceDisappear\n");
 
    struct Gravnix* pH = (struct Gravnix*)api;
 
@@ -734,7 +771,6 @@ int ShouldGravnixPieceDisappear(GravnixLib api, int nX, int nY)
 int ShouldGravnixPieceShrink(GravnixLib api, int nX, int nY)
 {
    DEBUG_FUNC_NAME;
-   //printf("ShouldGravnixPieceShrink\n");
 
    struct Gravnix* pH = (struct Gravnix*)api;
 
@@ -756,7 +792,6 @@ int ShouldGravnixPieceShrink(GravnixLib api, int nX, int nY)
 int IsGravnixPieceStuck(GravnixLib api, int nX, int nY)
 {
    DEBUG_FUNC_NAME;
-   //printf("IsGravnixPieceStuck\n");
 
    struct Gravnix* pH = (struct Gravnix*)api;
 
@@ -775,7 +810,6 @@ int IsGravnixPieceStuck(GravnixLib api, int nX, int nY)
 int DoGravnixShrinking(GravnixLib api)
 {
    DEBUG_FUNC_NAME;
-   //printf("DoGravnixShrinking\n");
 
    struct Gravnix* pH = (struct Gravnix*)api;
 
@@ -801,7 +835,6 @@ struct GravnixMatches
 int GravnixRemoveMatches(GravnixLib api)
 {
    DEBUG_FUNC_NAME;
-   //printf("GravnixRemoveMatches\n");
 
    struct Gravnix* pH = (struct Gravnix*)api;
 
@@ -836,9 +869,8 @@ int GravnixRemoveMatches(GravnixLib api)
 int SlideGravnixSpots(GravnixLib api, int nDirection, int nIsUndo)
 {
    DEBUG_FUNC_NAME;
-   printf("SlideGravnixSpots\n");
 
-   printf("SlideGravnixSpots %d; undo: %d\n", nDirection, nIsUndo);
+   DEBUG_MSG("SlideGravnixSpots %d; undo: %d\n", nDirection, nIsUndo);
 
    if( nDirection == GRAVNIXLIB_DIRECTION_NONE )
       return GRAVNIXLIB_CANNOT_SLIDE_NO_DIRECTION;

@@ -65,7 +65,7 @@ typedef void* GravnixLib;
 //Initalization/Error checking/Mode functions
 //////////////////////////////////////////////
 int GravnixLibCreate(GravnixLib* api, const char* pstrFile );
-int GravnixLibLevelCreate(GravnixLib* api, int nWidth, int nHeight );
+int GravnixLibLevelCreate(GravnixLib* api, int nWidth, int nHeight, int nMoves );
 int GravnixLibFree(GravnixLib* api);
 
 int GetGravnixLibError(GravnixLib api);

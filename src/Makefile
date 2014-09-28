@@ -18,10 +18,10 @@ prepare:
 	mkdir -p include/ArchiveLib
 	mkdir -p include/GravnixLib
 	mkdir -p lib
-	cp -v ArchiveLib/include/ArchiveLib.h include/ArchiveLib
-	cp -v ArchiveLib/libArchive.a lib
-	cp -v GravnixLib/include/GravnixLib.h include/GravnixLib
-	cp -v GravnixLib/libGravnix.a lib
+	ln -s ../../ArchiveLib/include/ArchiveLib.h include/ArchiveLib/ArchiveLib.h
+	ln -s ../ArchiveLib/libArchive.a lib/libArchive.a
+	ln -s ../../GravnixLib/include/GravnixLib.h include/GravnixLib/GravnixLib.h
+	ln -s ../GravnixLib/libGravnix.a lib/libGravnix.a
 
 %.o: %.cpp
 	$(GCC) $(GCCFLAGS) -c $<
