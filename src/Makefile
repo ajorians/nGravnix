@@ -14,10 +14,10 @@ all:	prepare $(EXE)
 
 #Because JGit does not do symbolic links and TeamCity uses JGit
 prepare:
-	mkdir include
-	mkdir include/ArchiveLib
-	mkdir include/GravnixLib
-	mkdir lib
+	mkdir -p include
+	mkdir -p include/ArchiveLib
+	mkdir -p include/GravnixLib
+	mkdir -p lib
 	cp -v ArchiveLib/include/ArchiveLib.h include/ArchiveLib
 	cp -v ArchiveLib/libArchive.a lib
 	cp -v GravnixLib/include/GravnixLib.h include/GravnixLib

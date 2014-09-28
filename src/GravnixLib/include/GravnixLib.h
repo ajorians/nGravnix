@@ -80,6 +80,7 @@ int GetGravnixBoardHeight(GravnixLib api);
 int GetGravnixSpotValue(GravnixLib api, int nX, int nY);
 int SetGravnixSpotValue(GravnixLib api, int nX, int nY, int nValue);
 int GetGravnixBoardValue(GravnixLib api, int nX, int nY);
+int SetGravnixBoardValue(GravnixLib api, int nX, int nY, int nValue);
 int IsGravnixSolved(GravnixLib api);
 int GetGravnixMoveLimit(GravnixLib api);
 int GetGravnixMovesMadeSoFar(GravnixLib api);
