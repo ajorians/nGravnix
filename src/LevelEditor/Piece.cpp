@@ -1,5 +1,6 @@
 #include "Piece.h"
 #include "Defines.h"
+#include "PieceGraphics.h"
 extern "C"
 {
         #include "GravnixLib/GravnixLib.h"
@@ -31,48 +32,52 @@ void PieceControl::ClearPieces()
 bool PieceControl::CreatePiece(int nType, int nX, int nY)
 {
    struct PieceSprite* pPiece = (PieceSprite*)malloc(sizeof(struct PieceSprite));
-
    pPiece->img = SDL_CreateRGBSurface(SDL_SWSURFACE, m_pBoardMetrics->GetPieceSize(), m_pBoardMetrics->GetPieceSize(), 16, 0, 0, 0, 0);
 
-   Uint32 clr;
+   SDL_Surface* pSurface;
    switch(nType) {
-      default:
+      //default:
       case BOARD_VALUE:
-         clr = SDL_MapRGB(m_pScreen->format, 139, 137, 137);
+         pSurface = nSDL_LoadImage(image_Gravnix_Block);
       break;
+      default:
       case RED_BLOCK_VALUE:
-         clr = SDL_MapRGB(m_pScreen->format, 255, 0, 0);
+         pSurface = nSDL_LoadImage(image_Gravnix_RedBlock);
       break;
       case BLUE_BLOCK_VALUE:
-         clr = SDL_MapRGB(m_pScreen->format, 0, 255, 255);
+         pSurface = nSDL_LoadImage(image_Gravnix_CyanBlock);
       break;
       case PURPLE_BLOCK_VALUE:
-         clr = SDL_MapRGB(m_pScreen->format, 153, 50, 204);
+         pSurface = nSDL_LoadImage(image_Gravnix_PurpleBlock);
       break;
       case ORANGE_BLOCK_VALUE:
-         clr = SDL_MapRGB(m_pScreen->format, 255, 165, 0);
+         pSurface = nSDL_LoadImage(image_Gravnix_OrangeBlock);
       break;
       case YELLOW_BLOCK_VALUE:
-         clr = SDL_MapRGB(m_pScreen->format, 255, 255, 0);
+         pSurface = nSDL_LoadImage(image_Gravnix_YellowBlock);
       break;
       case GREEN_BLOCK_VALUE:
-         clr = SDL_MapRGB(m_pScreen->format, 0, 255, 0);
+         pSurface = nSDL_LoadImage(image_Gravnix_GreenBlock);
       break;
       case GLASS_BLOCK_VALUE:
-         clr = SDL_MapRGB(m_pScreen->format, 205, 201, 201);
+         pSurface = nSDL_LoadImage(image_Gravnix_GlassBlock);
       break;
       case RAINBOW_BLOCK_VALUE:
-         clr = SDL_MapRGB(m_pScreen->format, 178, 34, 34);
+         pSurface = nSDL_LoadImage(image_Gravnix_RainbowBlock);
       break;
       case BLACKHOLE_BLOCK_VALUE:
-         clr = SDL_MapRGB(m_pScreen->format, 0, 0, 0);
+         pSurface = nSDL_LoadImage(image_Gravnix_BlackHole);
       break;
       case STICKY_BLOCK_VALUE:
-         clr = SDL_MapRGB(m_pScreen->format, 250, 128, 114);
+         pSurface = nSDL_LoadImage(image_Gravnix_StickyBlock);
+      break;
+      case STUCK_GLASS_BLOCK_VALUE:
+         pSurface = nSDL_LoadImage(image_Gravnix_StuckGlass);
       break;
    }
 
-   SDL_FillRect(pPiece->img, NULL, clr);
+   SDL_SoftStretch(pSurface, NULL, pPiece->img, NULL);
+   SDL_FreeSurface(pSurface);
 
    pPiece->replace = SDL_CreateRGBSurface(SDL_SWSURFACE, m_pBoardMetrics->GetPieceSize(), m_pBoardMetrics->GetPieceSize(), 16, 0, 0, 0, 0);
 
