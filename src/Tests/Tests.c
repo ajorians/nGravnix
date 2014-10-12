@@ -2,7 +2,7 @@
 #include "GravnixLib/GravnixLib.h"
 #include "GravnixLevels.h"
 
-#define PRINT_FUNC nio_printf("%s", __func__); printf(__func__); printf("\n");
+#define PRINT_FUNC nio_printf("%s", __func__); /*printf(__func__); printf("\n");*/
 
 #define TEST_SUCCEEDED	(0)
 #define TEST_FAILED	(1)
@@ -1311,7 +1311,7 @@ typedef int (*testfunc)();
       TestWidthHeightLV1,
       TestInitiallySolvedLV1,
       TestInitialMovesMadeLV1,
-      /*TestBeatLV1,
+      TestBeatLV1,
       TestBeatLV2,
       TestBeatLV3,
       TestBeatLV4,
@@ -1333,7 +1333,7 @@ typedef int (*testfunc)();
       TestBeatLV20,
       TestBeatLV21,
       TestBeatLV22,
-      TestBeatLV23,*/
+      TestBeatLV23,
       TestBeatLV24,
       TestBeatLV25,
       TestBeatLV26,
