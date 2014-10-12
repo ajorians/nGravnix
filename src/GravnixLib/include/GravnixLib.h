@@ -93,6 +93,7 @@ int DoGravnixDropping(GravnixLib api);
 int ShouldGravnixPieceDisappear(GravnixLib api, int nX, int nY);
 int GravnixRemoveMatches(GravnixLib api);
 int SlideGravnixSpots(GravnixLib api, int nDirection, int nIsUndo);
+int GravnixMakeMove(GravnixLib api, int nDirection);
 int GravnixCheckFinishedPendingAction(GravnixLib api);
 int GetGravnixDirection(GravnixLib api);
 int GravnixUndo(GravnixLib api);

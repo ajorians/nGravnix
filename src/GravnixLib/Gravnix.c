@@ -964,6 +964,26 @@ int SlideGravnixSpots(GravnixLib api, int nDirection, int nIsUndo)
    return GRAVNIXLIB_CAN_SLIDE;
 }
 
+int GravnixMakeMove(GravnixLib api, int nDirection)
+{
+   SlideGravnixSpots(api, nDirection, 0);
+   while(1) {
+      if( DoGravnixDropping(api) )
+         continue;
+
+      if( DoGravnixShrinking(api) )
+         continue;
+
+      if( GravnixRemoveMatches(api) )
+         continue;
+
+      break;
+   }
+   GravnixCheckFinishedPendingAction(api);
+
+   GRAVNIXLIB_OK;
+}
+
 int GravnixCheckFinishedPendingAction(GravnixLib api)
 {
    DEBUG_FUNC_NAME;
