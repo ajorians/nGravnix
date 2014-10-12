@@ -12,11 +12,14 @@ extern "C"
 int main(int argc, char *argv[]) 
 {
 	int nWidth = 0, nHeight = 0;
-	if( 0 == show_2numeric_input("Dimesions", "Specify width and height", "Width", &nWidth, 4, 15, "Height", &nHeight, 4, 14))
+	if( 0 == show_2numeric_input("Dimesions", "Specify width and height", "Width", &nWidth, 4, 40, "Height", &nHeight, 4, 40))
 		return 0;
         int nMoves = 5;
         if( 0 == show_1numeric_input("Moves", "Specify number of moves", "Moves", &nMoves, 1, 99) )
 		return 0;
+
+	//Wait for no keypressed
+	while(any_key_pressed()){}
 
 	printf("Initializing SDL.\n");
 	
@@ -60,5 +63,6 @@ int main(int argc, char *argv[])
 
     printf("Quitting...\n");
 
+   refresh_osscr();//Might have created a file
 	return 0;
 }

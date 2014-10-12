@@ -8,16 +8,16 @@ extern "C"
 #include "SDL/SDL_gfxPrimitives.h"
 }
 
-Game::Game(SDL_Surface* pScreen, const char* pstrFile, int nLevelNumber, Config* pConfig)
-: m_pScreen(pScreen), m_Background(pScreen, pConfig), m_StartMessage(pScreen)
+Game::Game(SDL_Surface* pScreen, GravnixLib* pGravnix)
+: m_pScreen(pScreen), m_Background(pScreen), m_StartMessage(pScreen)
 #ifdef USE_GRAPHIC_YOU_WIN
 , m_pWinGraphic(NULL)
 #else
 , m_YouWinMessage(pScreen)
 #endif
-, m_nLevelNumber(nLevelNumber), m_pConfig(pConfig), m_MovesRemainingLabel(pScreen, &m_BoardMetrics), m_bGameOver(false), m_Pieces(pScreen, &m_BoardMetrics, pConfig, &m_MovesRemainingLabel), m_bShouldQuit(false)
+, m_MovesRemainingLabel(pScreen, &m_BoardMetrics), m_bGameOver(false), m_Pieces(pScreen, &m_BoardMetrics, &m_MovesRemainingLabel, NULL), m_bShouldQuit(false)
 {
-	GravnixLibCreate(&m_Gravnix, pstrFile);
+        m_Gravnix = *pGravnix;
 	m_MovesRemainingLabel.SetGravnixLib(&m_Gravnix);
 
 	int nWidth = GetGravnixBoardWidth(m_Gravnix), nHeight = GetGravnixBoardHeight(m_Gravnix);
@@ -35,7 +35,7 @@ Game::Game(SDL_Surface* pScreen, const char* pstrFile, int nLevelNumber, Config*
                 }
         }
 
-	if( m_pConfig->GetShowOpeningMoveLimit() ) {
+	if( true/*m_pConfig->GetShowOpeningMoveLimit()*/ ) {
 		char buffer[32];
 		char buf[8];
 		strcpy(buffer, "Move\nLimit: ");
@@ -47,7 +47,6 @@ Game::Game(SDL_Surface* pScreen, const char* pstrFile, int nLevelNumber, Config*
 
 Game::~Game()
 {
-	GravnixLibFree(&m_Gravnix);
 #ifdef USE_GRAPHIC_YOU_WIN
 	if( m_pWinGraphic != NULL )
 		SDL_FreeSurface(m_pWinGraphic);
@@ -182,9 +181,6 @@ bool Game::CheckStateConditions()
          m_YouWinMessage.CreateMessage("Level\nComplete!!\n******");
 #endif
          m_Timer.Stop();
-         if( m_nLevelNumber >= 0 ) {
-            m_pConfig->SetBeatLevel(m_nLevelNumber, m_Timer.GetElapsed());
-         }
       }
 
       if( m_YouWinMessage.HasMessage() && ((!m_YouWinMessage.IsAnimating() && !m_YouWinMessage.IsStayDuration()) || m_YouWinMessage.FinishFast()) )
