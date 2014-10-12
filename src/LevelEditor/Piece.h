@@ -9,6 +9,7 @@ extern "C"
 
 #include "Metrics.h"
 #include "Selector.h"
+#include "MovesRemainingLabel.h"
 #include "Direction.h"
 
 struct PieceSprite
@@ -20,6 +21,8 @@ struct PieceSprite
    int x,y;
    int toX, toY;
    bool toFade;
+   bool toShrink;
+   bool visible;
    int nFadeAmount;
    struct PieceSprite* next;
 };
@@ -27,19 +30,23 @@ struct PieceSprite
 class PieceControl
 {
 public:
-   PieceControl(SDL_Surface* pScreen, Metrics* pBoardMetrics, Selector* pSelector);
+   PieceControl(SDL_Surface* pScreen, Metrics* pBoardMetrics, MovesRemainingLabel* pLabel, Selector* pSelector);
    ~PieceControl();
 
    void ClearPieces();
    bool CreatePiece(int nType, int nX, int nY);
    bool DropPiece(int nX, int nY, Direction eDirection);
    bool DisappearPiece(int nX, int nY);
+   bool HidePiece(int nX, int nY, int nType, bool bHide);
+   bool ChangePiece(int nX, int nY, int nType, int nNewType);
+   bool ShrinkPiece(int nX, int nY, int nType);
    bool IsAnimating() const;
    bool Animate();
 
 protected:
    SDL_Surface* m_pScreen;//Does NOT own
    Metrics* m_pBoardMetrics;//Does NOT own
+   MovesRemainingLabel* m_pMovesLabel;//Does NOT own
    Selector* m_pSelector;//Does NOT own
    PieceSprite* m_pRoot;
 };

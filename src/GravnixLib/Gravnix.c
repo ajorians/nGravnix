@@ -66,6 +66,7 @@ struct Gravnix
 {
    struct GravnixBoard* m_pBoard;
    int m_nDirection;
+   int m_bPendingAction;
    char* m_pstrFile;
    int m_nNumberOfMoves;
    struct GravnixAction* m_pUndoActions;//Also used for move count :)
@@ -93,6 +94,7 @@ int GravnixLoadBoard(GravnixLib api, char* pstrFile)
    }
    pH->m_pBoard->m_pItems = NULL;
    pH->m_nDirection = GRAVNIXLIB_DIRECTION_NONE;
+   pH->m_bPendingAction = 0;
 
    if( strstr(pstrFile, "Gravnix ") != pstrFile ) {//Gravnix file version check
       free(pH->m_pBoard);
@@ -242,6 +244,7 @@ int GravnixLibCreate(GravnixLib* api, const char* pstrFile)
    pH->m_pstrFile = pstrFile;
    pH->m_pBoard = NULL;
    pH->m_nDirection = GRAVNIXLIB_DIRECTION_NONE;
+   pH->m_bPendingAction = 0;
 
    int nRet = GravnixLoadBoard((GravnixLib)pH, pstrFile);
    if( nRet != GRAVNIXLIB_OK )
@@ -268,7 +271,8 @@ int GravnixLibLevelCreate(GravnixLib* api, int nWidth, int nHeight, int nMoves)
    }
 
    pH->m_pBoard = NULL;
-   pH->m_nDirection = GRAVNIXLIB_DIRECTION_NONE; 
+   pH->m_nDirection = GRAVNIXLIB_DIRECTION_NONE;
+   pH->m_bPendingAction = 0; 
    pH->m_pstrFile = NULL;
    pH->m_nNumberOfMoves = nMoves;
    pH->m_pUndoActions = NULL;
@@ -319,6 +323,69 @@ int GravnixLibLevelCreate(GravnixLib* api, int nWidth, int nHeight, int nMoves)
    DEBUG_MSG("LibLevelCreate -- Finished\n");
 
    return GRAVNIXLIB_OK;
+}
+
+int GravnixLibCopy(GravnixLib api, GravnixLib* copy)
+{
+   DEBUG_FUNC_NAME;
+
+   struct Gravnix* pOrig = (struct Gravnix*)api;
+
+   struct Gravnix* pH = malloc(sizeof(struct Gravnix));
+   if( pH == NULL ){//Out of memory
+      return GRAVNIXLIB_OUT_OF_MEMORY;
+   }
+   pH->m_pBoard = NULL;
+   pH->m_nDirection = GRAVNIXLIB_DIRECTION_NONE;
+   pH->m_bPendingAction = 0;
+   pH->m_pstrFile = NULL;
+   pH->m_nNumberOfMoves = GetGravnixMoveLimit(api);
+   pH->m_pUndoActions = NULL;
+   pH->m_pRedoActions = NULL;
+   pH->m_nLastError = GRAVNIXLIB_OK;
+
+   pH->m_pBoard = malloc(sizeof(struct GravnixBoard));
+   if( pH->m_pBoard == NULL ){//Out of memory
+      free(pH);
+      pH = NULL;
+      return GRAVNIXLIB_OUT_OF_MEMORY;
+   }
+
+   pH->m_pBoard->m_pItems = NULL;
+   pH->m_pBoard->m_pBoardItems = NULL;
+
+   int nWidth = GetGravnixBoardWidth(api), nHeight = GetGravnixBoardHeight(api);
+   pH->m_pBoard->m_nWidth = nWidth;
+   pH->m_pBoard->m_nHeight = nHeight;
+   pH->m_pBoard->m_pItems = malloc(nWidth*nHeight*sizeof(struct GravnixItem));
+
+   if( pH->m_pBoard->m_pItems == NULL ) {//Out of memory
+      free(pH->m_pBoard);
+      pH->m_pBoard = NULL;
+      free(pH);
+      pH = NULL;
+      return GRAVNIXLIB_OUT_OF_MEMORY;
+   }
+
+   pH->m_pBoard->m_pBoardItems = malloc(nWidth*nHeight*sizeof(struct GravnixItem));
+   if( pH->m_pBoard->m_pBoardItems == NULL ) {//Out of memory
+      free(pH->m_pBoard->m_pItems);
+      free(pH->m_pBoard);
+      pH->m_pBoard = NULL;
+      free(pH);
+      pH = NULL;
+      return GRAVNIXLIB_OUT_OF_MEMORY;
+   }
+
+   *copy = pH;
+
+   int x,y;
+   for(x=0; x<nWidth; x++) {
+      for(y=0; y<nHeight; y++) {
+         SetGravnixSpotValue(*copy, x, y, GetGravnixSpotValue(api, x, y));
+         SetGravnixBoardValue(*copy, x, y, GetGravnixBoardValue(api, x, y));
+      }
+   }
 }
 
 void ClearUndos(GravnixLib api)
@@ -876,6 +943,9 @@ int SlideGravnixSpots(GravnixLib api, int nDirection, int nIsUndo)
       return GRAVNIXLIB_CANNOT_SLIDE_NO_DIRECTION;
 
    struct Gravnix* pH = (struct Gravnix*)api;
+   if( pH->m_bPendingAction == 1 )
+      return GRAVNIXLIB_CANNOT_SLIDE_NO_DIRECTION;//TODO: New define
+
    if( GetGravnixMovesMadeSoFar(api) >= pH->m_nNumberOfMoves )
       return GRAVNIXLIB_CANNOT_SLIDE_MOVE_LIMIT;
 
@@ -889,8 +959,29 @@ int SlideGravnixSpots(GravnixLib api, int nDirection, int nIsUndo)
    }
 
    pH->m_nDirection = nDirection;
+   pH->m_bPendingAction = 1;
 
    return GRAVNIXLIB_CAN_SLIDE;
+}
+
+int GravnixCheckFinishedPendingAction(GravnixLib api)
+{
+   DEBUG_FUNC_NAME;
+
+   struct Gravnix* pH = (struct Gravnix*)api;
+   if( pH->m_bPendingAction == 0 )
+      return 0;
+
+   //Check any should drop
+   for(int nX=0; nX<GetGravnixBoardWidth(api); nX++) {
+      for(int nY=0; nY<GetGravnixBoardHeight(api); nY++) {
+         if( GRAVNIXLIB_SHOULD_DROP == ShouldGravnixPieceDrop(api, nX, nY ) )
+            return 1;
+      }
+   }
+
+   pH->m_bPendingAction = 0;
+   return 0;
 }
 
 int GetGravnixDirection(GravnixLib api)
@@ -921,6 +1012,7 @@ void DoUndo(GravnixLib api, struct GravnixAction* pUndo)
       
       break;
    }
+   GravnixCheckFinishedPendingAction(api);
 }
 
 int GravnixUndo(GravnixLib api)
@@ -928,6 +1020,9 @@ int GravnixUndo(GravnixLib api)
    DEBUG_FUNC_NAME;
 
    struct Gravnix* pH = (struct Gravnix*)api;
+
+   if( pH->m_pstrFile == NULL )
+      return GRAVNIXLIB_OK;
 
    struct GravnixAction* pRoot = pH->m_pUndoActions;
    if( pRoot == NULL )

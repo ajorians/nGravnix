@@ -11,6 +11,7 @@ extern "C"
 #include "Metrics.h"
 #include "Piece.h"
 #include "Direction.h"
+#include "Background.h"
 #include "Selector.h"
 #include "Defines.h"
 
@@ -29,15 +30,19 @@ protected:
 	void Move(Direction eDirection);
 	void SetCurrentPiece();
 	void PrintLevel();
+	bool CheckClose();
+
+	void TestLevel();
 
 protected:
 	SDL_Surface	*m_pScreen;//Does not own
-	SDL_Surface *m_pBackground;
+	Background m_Background;
 	nSDL_Font 	*m_pFont;
 	GravnixLib	m_Gravnix;
 	Metrics		m_BoardMetrics;
 	PieceControl	m_Pieces;
 	Selector	m_Selector;
+	bool		m_bModified;
 };
 
 #endif

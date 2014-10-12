@@ -1,5 +1,6 @@
 #include "LevelEditor.h"
-#include "GameBackground.h"
+//#include "GameBackground.h"
+#include "Game.h"
 
 extern "C"
 {
@@ -7,14 +8,13 @@ extern "C"
 }
 
 LevelEditor::LevelEditor(SDL_Surface* pScreen, int nWidth, int nHeight, int nMoves)
-: m_pScreen(pScreen), m_Pieces(pScreen, &m_BoardMetrics, &m_Selector), m_Selector(pScreen, &m_BoardMetrics)
+: m_pScreen(pScreen), m_Background(pScreen), m_Pieces(pScreen, &m_BoardMetrics, NULL, &m_Selector), m_Selector(pScreen, &m_BoardMetrics), m_bModified(false)
 {
 	printf("Width: %d, Height: %d\n", nWidth, nHeight);
 	GravnixLibLevelCreate(&m_Gravnix, nWidth, nHeight, nMoves);
 
 	m_BoardMetrics.SetDimensions(nWidth, nHeight);
 
-	m_pBackground = nSDL_LoadImage(image_PuzzleFrenzyGameBackground);
 	m_pFont = nSDL_LoadFont(NSDL_FONT_THIN, 0/*R*/, 0/*G*/, 0/*B*/);
 
         for(int nX=0; nX<nWidth; nX++) {
@@ -31,7 +31,6 @@ LevelEditor::LevelEditor(SDL_Surface* pScreen, int nWidth, int nHeight, int nMov
 LevelEditor::~LevelEditor()
 {
 	GravnixLibFree(&m_Gravnix);
-	SDL_FreeSurface(m_pBackground);
 	nSDL_FreeFont(m_pFont);
 }
 
@@ -78,7 +77,7 @@ bool LevelEditor::PollEvents()
 				{
 					case SDLK_ESCAPE:
 						fprintf(stderr, "Hit Escape!n");
-					return false;
+					return CheckClose() ? true : false;
 					break;
 
 					 case SDLK_RETURN:
@@ -108,6 +107,10 @@ bool LevelEditor::PollEvents()
 					case SDLK_LEFT:
 					case SDLK_4:
 						Move(Left);
+						break;
+
+					case SDLK_SPACE:
+						TestLevel();
 						break;
 
 					/*case SDLK_PLUS:
@@ -140,11 +143,7 @@ bool LevelEditor::PollEvents()
 void LevelEditor::UpdateDisplay()
 {
 	//Draw background
-	if( !is_classic ) {
-		SDL_BlitSurface(m_pBackground, NULL, m_pScreen, NULL);
-	} else {
-		SDL_FillRect(m_pScreen, NULL, SDL_MapRGB(m_pScreen->format, 255, 255, 255));
-	}
+	m_Background.DrawBackground();
 
 	boxRGBA(m_pScreen, m_BoardMetrics.GetLeft(), m_BoardMetrics.GetTop(), m_BoardMetrics.GetRight(), m_BoardMetrics.GetBottom(),  GAME_BACKGROUND_R, GAME_BACKGROUND_G, GAME_BACKGROUND_B, 230);
 
@@ -173,6 +172,8 @@ void LevelEditor::SetCurrentPiece()
    }
    if( nValue > NO_PIECE )
       m_Pieces.CreatePiece(nValue, nX, nY);
+
+   m_bModified = true;
 }
 
 void LevelEditor::Move(Direction eDirection)
@@ -197,11 +198,54 @@ void LevelEditor::PrintLevel()
       free(buf);
    }
 
-   FILE *fp = fopen("output.gravnix.tns", "w");
+   char* pstr = NULL;
+   int nLen = show_msg_user_input("Save file name", "Filename:", "output.gravnix.tns", &pstr);
+   if( nLen <= 0 )
+      return;
+
+   //Wait for no keypressed
+   while(any_key_pressed()){}
+
+   FILE *fp = fopen(pstr, "w");
    if (fp) {
       fwrite(buffer, strlen(buffer), 1, fp);
+      m_bModified = false;
+   }
+   else {
+      show_msgbox("Error", "Problems opening for write the save file.  Try again.");
+      //Wait for no keypressed
+      while(any_key_pressed()){}
    }
    fclose(fp);
+
+   free(pstr);
 }
 
+bool LevelEditor::CheckClose()
+{
+   //Wait for no keypressed
+   while(any_key_pressed()){}
 
+   if( m_bModified )
+   {
+      int nBtn = show_msgbox_2b("Exit without saving?", "Continue closing", "Yes", "No");
+
+      //Wait for no keypressed
+      while(any_key_pressed()){}
+
+      if( nBtn == 1 )
+         return false;
+      return true;
+   }
+
+   return false;
+}
+
+void LevelEditor::TestLevel()
+{
+   GravnixLib copy;
+   GravnixLibCopy(m_Gravnix, &copy);
+   Game g(m_pScreen, &copy);
+   while( g.Loop() ){}
+   GravnixLibFree(&copy);
+}

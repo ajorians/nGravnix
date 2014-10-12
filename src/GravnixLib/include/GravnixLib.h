@@ -66,6 +66,7 @@ typedef void* GravnixLib;
 //////////////////////////////////////////////
 int GravnixLibCreate(GravnixLib* api, const char* pstrFile );
 int GravnixLibLevelCreate(GravnixLib* api, int nWidth, int nHeight, int nMoves );
+int GravnixLibCopy(GravnixLib api, GravnixLib* copy);
 int GravnixLibFree(GravnixLib* api);
 
 int GetGravnixLibError(GravnixLib api);
@@ -92,6 +93,7 @@ int DoGravnixDropping(GravnixLib api);
 int ShouldGravnixPieceDisappear(GravnixLib api, int nX, int nY);
 int GravnixRemoveMatches(GravnixLib api);
 int SlideGravnixSpots(GravnixLib api, int nDirection, int nIsUndo);
+int GravnixCheckFinishedPendingAction(GravnixLib api);
 int GetGravnixDirection(GravnixLib api);
 int GravnixUndo(GravnixLib api);
 int GravnixRedo(GravnixLib api);
