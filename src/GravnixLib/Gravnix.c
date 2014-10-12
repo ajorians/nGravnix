@@ -578,11 +578,11 @@ int SetGravnixSpotValue(GravnixLib api, int nX, int nY, int nValue)
    {
       default:
       case BOARD_VALUE:
+      case BLACKHOLE_BLOCK_VALUE:
          printf("Unexpected SetGravnixSpotValue: %d\n", nValue);
          break;
       case NO_PIECE:
       case RED_BLOCK_VALUE...RAINBOW_BLOCK_VALUE:
-      case BLACKHOLE_BLOCK_VALUE:
       case STICKY_BLOCK_VALUE:
       case STUCK_GLASS_BLOCK_VALUE:
          break;
@@ -623,6 +623,7 @@ int SetGravnixBoardValue(GravnixLib api, int nX, int nY, int nValue)
          break;
       case NO_PIECE:
       case BOARD_VALUE:
+      case BLACKHOLE_BLOCK_VALUE:
       case STICKY_BLOCK_VALUE:
       case STUCK_GLASS_BLOCK_VALUE:
          break;
@@ -692,7 +693,7 @@ int ShouldGravnixPieceDrop(GravnixLib api, int nX, int nY)
       return GRAVNIXLIB_CANNOT_DROP;//TODO: Different return value
    }
 
-   if( GetGravnixSpotValue(api, nX, nY) == BLACKHOLE_BLOCK_VALUE ) {
+   if( GetGravnixBoardValue(api, nX, nY) == BLACKHOLE_BLOCK_VALUE ) {
       return GRAVNIXLIB_CANNOT_DROP;
    }
 
@@ -776,7 +777,7 @@ int DoGravnixDropping(GravnixLib api)
 
 int IsNormalPieceType(int nType)
 {
-   if( nType == 0 || nType == BOARD_VALUE || nType == GLASS_BLOCK_VALUE || nType == RAINBOW_BLOCK_VALUE || nType == BLACKHOLE_BLOCK_VALUE || nType == STICKY_BLOCK_VALUE )
+   if( nType == NO_PIECE || nType == BOARD_VALUE || nType == GLASS_BLOCK_VALUE || nType == RAINBOW_BLOCK_VALUE || nType == BLACKHOLE_BLOCK_VALUE || nType == STICKY_BLOCK_VALUE )
       return 0;
 
    return 1;
