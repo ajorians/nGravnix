@@ -8,8 +8,8 @@ OBJCOPY := "$(shell which arm-elf-objcopy 2>/dev/null)"
 ifeq (${OBJCOPY},"")
 	OBJCOPY := arm-none-eabi-objcopy
 endif
-EXE = nGravnix-sdl.tns
-DISTDIR = .
+EXE = nGravnix-sdl
+DISTDIR = ..
 
 OBJS = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 vpath %.tns $(DISTDIR)
@@ -19,6 +19,8 @@ all:	prepare $(EXE).prg.tns
 
 #Because JGit does not do symbolic links and TeamCity uses JGit
 prepare:
+	cd ArchiveLib; make; cd ..
+	cd GravnixLib; make; cd ..
 	mkdir -p include
 	mkdir -p include/ArchiveLib
 	mkdir -p include/GravnixLib
@@ -42,6 +44,8 @@ $(EXE).prg.tns: $(EXE).tns
 	make-prg $(DISTDIR)/$^ $(DISTDIR)/$@
 
 clean:
+	cd ArchiveLib; make clean; cd ..
+	cd GravnixLib; make clean; cd ..
 	rm -rf include
 	rm -rf lib
 	rm -f *.o *.elf
