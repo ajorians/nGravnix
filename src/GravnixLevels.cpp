@@ -1,6 +1,8 @@
 #include "GravnixLevels.h"
 
+#if 0
 int g_nRelocatedGlobals = 0;
+#endif
 const char* g_Levels[] = 
 {
    LEVEL_1,
